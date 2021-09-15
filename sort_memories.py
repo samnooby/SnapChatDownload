@@ -41,7 +41,7 @@ def findMissingMemories():
 
         # check if it exists in memories or year folder
         try:
-            if not filename in os.listdir(f'./{FOLDER_NAME}') and not filename in os.listdir(f'./{FOLDER_NAME}/{year}'):
+            if not filename in os.listdir(f'./{FOLDER_NAME}'):
                 missing_memories.append(item)
         except FileNotFoundError:
             missing_memories.append(item)
@@ -99,7 +99,6 @@ def downloadMemories():
     os.remove("./missingmemories.json")
     
 def sortMemories(sort_by='year'):
-    resetSorting()
     print("Sorting memories..")
 
     # Sets the level of sorting depeding on the input
@@ -153,6 +152,7 @@ def resetSorting():
             os.removedirs(current_directory)
 
 if __name__ == "__main__":
+    resetSorting()
     print(f'You have {findMissingMemories()} missing memories')
     find_memories = input("Do you want to find missing memories? (Y/N)")
     if find_memories == 'Y':
