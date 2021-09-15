@@ -9,7 +9,7 @@ FOLDER_NAME = "memories"
 def findMissingMemories():
     print("Finding missing memories...")
     # Gets the memories from the json file
-    with open('memories_history.json', 'r') as f:
+    with open('./json/memories_history.json', 'r') as f:
         data = json.loads(f.read())
         data = data["Saved Media"]
 
@@ -21,6 +21,7 @@ def findMissingMemories():
     except FileNotFoundError:
         print("Memories folder not found...\nCreating memories folder")
         os.makedirs(f'./{FOLDER_NAME}')
+        # os.makedirs("memories")
         with open('./missingmemories.json', 'w') as f:
             json.dump(data, f)
         
@@ -148,13 +149,13 @@ def resetSorting():
                 os.rename(f'{current_directory}/{item}', f'./{FOLDER_NAME}/{item}')
             else:
                 folders.append(f'{current_directory}/{item}')
-        if len(os.listdir(current_directory)) == 0:
+        if len(os.listdir(current_directory)) == 0 and current_directory != f'./{FOLDER_NAME}':
             os.removedirs(current_directory)
 
 if __name__ == "__main__":
+    print(f'You have {findMissingMemories()} missing memories')
     find_memories = input("Do you want to find missing memories? (Y/N)")
     if find_memories == 'Y':
-        findMissingMemories()
         downloadMemories()
     elif find_memories != 'N':
         print("Invalid response: Please enter either Y or N")
