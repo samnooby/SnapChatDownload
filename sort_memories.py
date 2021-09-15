@@ -9,7 +9,7 @@ FOLDER_NAME = "memories"
 def findMissingMemories():
     print("Finding missing memories...")
     # Gets the memories from the json file
-    with open('memories_history.json', 'r') as f:
+    with open('./json/memories_history.json', 'r') as f:
         data = json.loads(f.read())
         data = data["Saved Media"]
 
@@ -21,6 +21,7 @@ def findMissingMemories():
     except FileNotFoundError:
         print("Memories folder not found...\nCreating memories folder")
         os.makedirs(f'./{FOLDER_NAME}')
+        # os.makedirs("memories")
         with open('./missingmemories.json', 'w') as f:
             json.dump(data, f)
         
@@ -40,7 +41,7 @@ def findMissingMemories():
 
         # check if it exists in memories or year folder
         try:
-            if not filename in os.listdir(f'./{FOLDER_NAME}') and not filename in os.listdir(f'./{FOLDER_NAME}/{year}'):
+            if not filename in os.listdir(f'./{FOLDER_NAME}'):
                 missing_memories.append(item)
         except FileNotFoundError:
             missing_memories.append(item)
@@ -97,28 +98,66 @@ def downloadMemories():
     
     os.remove("./missingmemories.json")
     
-
-def sortMemories():
+def sortMemories(sort_by='year'):
     print("Sorting memories..")
+
+    # Sets the level of sorting depeding on the input
+    if sort_by == 'hour':
+        sort_level = 3
+    elif sort_by == 'day':
+        sort_level = 2
+    elif sort_by == 'month':
+        sort_level = 1
+    else:
+        sort_level = 0
+
     downloaded_memories = os.listdir(f'./{FOLDER_NAME}')
 
     for item in downloaded_memories:
         if item[-len(".jpg"):] in [".jpg", ".mp4"]:
-            year = item[:len("2021")]
+            levels_left = 0
+            date = [item[:len("2021")], item[len("2021-"):len("2021-01")], item[len("2021-01-"):len("2021-01-01")], item[len("2021-01-01_"):len("2021-01-01_15")]]
 
-            # Make sure the folder for the year exists
-            try:
-                os.listdir(f'./{FOLDER_NAME}/{year}')
-            except FileNotFoundError:
-                print(f'Folder for {year} not found\nCreating {year} folder...')
-                os.makedirs(f'./{FOLDER_NAME}/{year}')
+            item_location = f'./{FOLDER_NAME}'
 
-            os.rename(f'./{FOLDER_NAME}/{item}', f'./{FOLDER_NAME}/{year}/{item}')
+            while levels_left <= sort_level:
+                # Make sure the folder for the year exists
+                try:
+                    os.listdir(f'{item_location}/{date[levels_left]}')
+                except FileNotFoundError:
+                    print(f'Folder for {date[levels_left]} not found\nCreating {date[levels_left]} folder...')
+                    os.makedirs(f'{item_location}/{date[levels_left]}')
+
+                item_location = f'{item_location}/{date[levels_left]}'
+            
+                levels_left = levels_left + 1
+
+            print(f'Adding {item} to {item_location}')
+            os.rename(f'./{FOLDER_NAME}/{item}', f'{item_location}/{item}')
     
     print("Memories Sorted")
 
+def resetSorting():
+    folders = [f'./{FOLDER_NAME}']
+
+    while len(folders) > 0:
+        current_directory = folders.pop(0)
+        directory_items = os.listdir(current_directory)
+        for item in directory_items:
+            if item[-len(".jpg"):] in [".jpg", ".mp4"]:
+                os.rename(f'{current_directory}/{item}', f'./{FOLDER_NAME}/{item}')
+            else:
+                folders.append(f'{current_directory}/{item}')
+        if len(os.listdir(current_directory)) == 0 and current_directory != f'./{FOLDER_NAME}':
+            os.removedirs(current_directory)
+
 if __name__ == "__main__":
-    # while findMissingMemories() > 0:
-    #     downloadMemories()
-    findMissingMemories()
-    sortMemories()
+    resetSorting()
+    print(f'You have {findMissingMemories()} missing memories')
+    find_memories = input("Do you want to find missing memories? (Y/N)")
+    if find_memories == 'Y':
+        downloadMemories()
+    elif find_memories != 'N':
+        print("Invalid response: Please enter either Y or N")
+    sort_method = input("Select sort method (year, month, day, hour):")
+    sortMemories(sort_by=sort_method)
