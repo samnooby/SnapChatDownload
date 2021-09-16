@@ -5,6 +5,10 @@ import sys
 
 from datetime import datetime
 
+
+if __name__ == '__main__':
+    sys.exit('Please run main.py')
+
 FOLDER_NAME = "memories"
 
 # findMissingMemories checks all the folders and 
@@ -196,8 +200,8 @@ def resetSorting():
         if len(os.listdir(current_directory)) == 0 and current_directory != f'./{FOLDER_NAME}':
             os.removedirs(current_directory)
 
-if __name__ == "__main__":
-    if input('Running this program will undo any sorting you have done. Run anyway? (Y)').upper().strip(' ') != 'Y':
+def sortSnapchatMemories():
+    if input('Running this program will undo any sorting you have done. Run anyway? (Y): ').upper().strip(' ') != 'Y':
         sys.exit('Sorting cancelled, input must be Y to contunue')
 
     # Puts all memories in the root folder and finds what memories are missing
@@ -224,7 +228,7 @@ if __name__ == "__main__":
     valid_response = False
     while not valid_response:
         valid_response = True
-        sort_method = input("Select sort method (year, month, day, hour, location):").lower().strip(' ')
+        sort_method = input("Select sort method (year, month, day, hour, location): ").lower().strip(' ')
         if sort_method == 'location':
             sortMemoriesByLocation()
         elif sort_method in ['year', 'month', 'day', 'hour']:
@@ -232,3 +236,4 @@ if __name__ == "__main__":
         else:
             valid_response = False
             print('Please enter one of (year, month, day, hour, location)')
+    
