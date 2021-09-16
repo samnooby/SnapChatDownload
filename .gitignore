@@ -4,3 +4,5 @@ json/
 html/
 index.html
 mydata*
+
+__pycache__/
