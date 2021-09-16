@@ -3,6 +3,8 @@ import os
 import requests
 import sys
 
+from datetime import datetime
+
 FOLDER_NAME = "memories"
 
 # findMissingMemories checks all the folders and 
@@ -14,7 +16,7 @@ def findMissingMemories():
             data = json.loads(f.read())
             data = data["Saved Media"]
     except FileNotFoundError:
-        sys.exit("Error: Make sure json file is in directory")
+        sys.exit("Error: Make sure json folder is in directory")
 
 
     missing_memories = []
@@ -57,7 +59,6 @@ def findMissingMemories():
     print(f'Found {len(missing_memories)} missing memories')
     return(len(missing_memories))
 
-
 def downloadMemories():
     print("Downloading missing memories...")
     # Gets all memory data from json file
@@ -72,6 +73,7 @@ def downloadMemories():
         url = item["Download Link"]
         date_time = item["Date"].split(" ")
         media_type = item["Media Type"]
+        downloaded = False
     
         day = date_time[0]
         time = date_time[1].replace(':', '-')
@@ -82,22 +84,25 @@ def downloadMemories():
             print("Memory already exists")
         else:
             print(f'Getting data for memory {index} out of {length}...')
-
             try:
                 req = requests.post(url, allow_redirects=True)
                 response = req.text
                 file_data = requests.get(response)
+                downloaded = True
             except requests.exceptions.Timeout:
                 print(f'Timed out on memory {index}, {length - index} memories left')
                 return
             except Exception as e:
-                sys.exit(e)
+                if req.status_code != 500:
+                    print("Are your download links still valid? They exipire 7 days are the data is requested\nRedownload your data at: https://accounts.snapchat.com/accounts/downloadmydata")
+                    sys.exit(e)
+                print("Invalid download link... Memory may be deleted, moving on")
 
-
-            with open(filename, 'wb') as f:
-                f.write(file_data.content)
+            if downloaded:
+                with open(filename, 'wb') as f:
+                    f.write(file_data.content)
     
-            print(f'Created file {filename}')
+                print(f'Created file {filename}')
         index = index + 1
     
     os.remove("./missingmemories.json")
@@ -141,6 +146,42 @@ def sortMemories(sort_by='year'):
     
     print("Memories Sorted")
 
+def sortMemoriesByLocation():
+    downloaded_memories = os.listdir(f'./{FOLDER_NAME}')
+    try:
+        with open('./json/location_history.json', 'r') as f:
+            data = json.loads(f.read())
+            locations = data["Areas you may have visited in the last two years"]
+    except FileNotFoundError:
+        sys.exit("Error: Make sure json folder is in directory")
+
+    for location in locations:
+        location_time = location['Time'][:len('2021/01/02 12:00:00')]
+        location['Time'] = datetime.strptime(location_time, '%Y/%m/%d %H:%M:%S')
+
+    def locationDateTime(e):
+        return e['Time']
+
+    locations.sort(key=locationDateTime)
+
+    for memory in downloaded_memories:
+        memory_date = datetime.strptime(memory[:len('2021-09-06_21-20-58')], '%Y-%m-%d_%H-%M-%S')
+        index = 1
+        memory_location = locations[0]
+
+        while memory_date > memory_location['Time'] and len(locations) > index:
+            memory_location = locations[index]
+            index = index + 1
+
+        try:
+            os.listdir(f'./{FOLDER_NAME}/{memory_location["City"]}')
+        except FileNotFoundError:
+            os.makedirs(f'./{FOLDER_NAME}/{memory_location["City"]}')
+
+        os.rename(f'./{FOLDER_NAME}/{memory}', f'./{FOLDER_NAME}/{memory_location["City"]}/{memory}')
+
+
+
 def resetSorting():
     folders = [f'./{FOLDER_NAME}']
 
@@ -163,5 +204,8 @@ if __name__ == "__main__":
         downloadMemories()
     elif find_memories != 'N':
         print("Invalid response: Please enter either Y or N")
-    sort_method = input("Select sort method (year, month, day, hour):")
-    sortMemories(sort_by=sort_method)
+    sort_method = input("Select sort method (year, month, day, hour, location):")
+    if sort_method == 'location':
+        sortMemoriesByLocation()
+    else:
+        sortMemories(sort_by=sort_method)
