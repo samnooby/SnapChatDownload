@@ -9,9 +9,13 @@ FOLDER_NAME = "memories"
 def findMissingMemories():
     print("Finding missing memories...")
     # Gets the memories from the json file
-    with open('./json/memories_history.json', 'r') as f:
-        data = json.loads(f.read())
-        data = data["Saved Media"]
+    try:
+        with open('./json/memories_history.json', 'r') as f:
+            data = json.loads(f.read())
+            data = data["Saved Media"]
+    except FileNotFoundError:
+        sys.exit("Error: Make sure json file is in directory")
+
 
     missing_memories = []
 
