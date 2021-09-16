@@ -53,8 +53,9 @@ def findMissingMemories():
             missing_memories.append(item)
 
     # Put remaining memories in json file to be downloaded
-    with open('./missingmemories.json', 'w') as f:
-        json.dump(missing_memories, f)
+    if len(missing_memories) != 0:
+        with open('./missingmemories.json', 'w') as f:
+            json.dump(missing_memories, f)
     
     print(f'Found {len(missing_memories)} missing memories')
     return(len(missing_memories))
@@ -94,7 +95,7 @@ def downloadMemories():
                 return
             except Exception as e:
                 if req.status_code != 500:
-                    print("Are your download links still valid? They exipire 7 days are the data is requested\nRedownload your data at: https://accounts.snapchat.com/accounts/downloadmydata")
+                    print("Are your download links still valid? They exipire 7 days after the data is requested\nRequest your data again at: https://accounts.snapchat.com/accounts/downloadmydata")
                     sys.exit(e)
                 print("Invalid download link... Memory may be deleted, moving on")
 
@@ -108,7 +109,6 @@ def downloadMemories():
     os.remove("./missingmemories.json")
     
 def sortMemories(sort_by='year'):
-    print("Sorting memories..")
 
     # Sets the level of sorting depeding on the input
     if sort_by == 'hour':
@@ -134,17 +134,15 @@ def sortMemories(sort_by='year'):
                 try:
                     os.listdir(f'{item_location}/{date[levels_left]}')
                 except FileNotFoundError:
-                    print(f'Folder for {date[levels_left]} not found\nCreating {date[levels_left]} folder...')
                     os.makedirs(f'{item_location}/{date[levels_left]}')
 
                 item_location = f'{item_location}/{date[levels_left]}'
             
                 levels_left = levels_left + 1
 
-            print(f'Adding {item} to {item_location}')
             os.rename(f'./{FOLDER_NAME}/{item}', f'{item_location}/{item}')
     
-    print("Memories Sorted")
+    print(f'Memories sorted by {sort_by}')
 
 def sortMemoriesByLocation():
     downloaded_memories = os.listdir(f'./{FOLDER_NAME}')
@@ -180,6 +178,8 @@ def sortMemoriesByLocation():
 
         os.rename(f'./{FOLDER_NAME}/{memory}', f'./{FOLDER_NAME}/{memory_location["City"]}/{memory}')
 
+    print('Memories sorted by location')
+
 
 
 def resetSorting():
@@ -197,15 +197,38 @@ def resetSorting():
             os.removedirs(current_directory)
 
 if __name__ == "__main__":
+    if input('Running this program will undo any sorting you have done. Run anyway? (Y)').upper().strip(' ') != 'Y':
+        sys.exit('Sorting cancelled, input must be Y to contunue')
+
+    # Puts all memories in the root folder and finds what memories are missing
     resetSorting()
-    print(f'You have {findMissingMemories()} missing memories')
-    find_memories = input("Do you want to find missing memories? (Y/N)")
-    if find_memories == 'Y':
-        downloadMemories()
-    elif find_memories != 'N':
-        print("Invalid response: Please enter either Y or N")
-    sort_method = input("Select sort method (year, month, day, hour, location):")
-    if sort_method == 'location':
-        sortMemoriesByLocation()
-    else:
-        sortMemories(sort_by=sort_method)
+    num_missing = findMissingMemories()
+    print(f'You have {num_missing} missing memories')
+
+    # Asks the user to download the memories
+    if num_missing != 0:
+        valid_response = False
+        while not valid_response:
+            valid_response = True
+            find_memories = input("Do you want to download missing memories? (Y/N)").upper().strip(' ')
+            if find_memories == 'Y':
+                downloadMemories()
+                os.remove('./missingmemories.json')
+            elif find_memories == 'N':
+                print('Not downloading memories')
+            else:
+                print("Invalid response: Please enter either Y or N")
+                valid_response = False
+
+    # Asks the user how to sort the memories and sorts them
+    valid_response = False
+    while not valid_response:
+        valid_response = True
+        sort_method = input("Select sort method (year, month, day, hour, location):").lower().strip(' ')
+        if sort_method == 'location':
+            sortMemoriesByLocation()
+        elif sort_method in ['year', 'month', 'day', 'hour']:
+            sortMemories(sort_by=sort_method)
+        else:
+            valid_response = False
+            print('Please enter one of (year, month, day, hour, location)')
