@@ -12,7 +12,7 @@ if __name__ == '__main__':
         choice = input('Select option: ').strip(' ')
         if choice == '1':
             sort_memories.sortSnapchatMemories()
-        if choice == '2':
+        elif choice == '2':
             account_info.showAccountInfo()
         elif choice == '0':
             sys.exit('Exiting program...')
