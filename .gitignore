@@ -4,5 +4,6 @@ json/
 html/
 index.html
 mydata*
+android/
 
 __pycache__/
